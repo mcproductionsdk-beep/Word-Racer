@@ -56,12 +56,10 @@ var EXTRA={
 Object.keys(EXTRA).forEach(function(l){Object.keys(EXTRA[l]).forEach(function(c){LIB[l][c]=EXTRA[l][c]})})
 var W=900,H=600,DPR=1,vocab=[],queue=[],current=null,cars=[],shots=[],misses={},score=0,lives=3,round=1,done=0,speed=.16,spawnGap=1700,lastSpawn=0,lastTime=0,running=false,paused=false,soundOn=true,audioCtx=null,lang="de-DE",raf=0,invincible=0,roadScroll=0,keys={},boostFactor=1;
 var player={x:.5,y:.80,w:.075,h:.14};
-function parse(t){var a=[];t.replace(//g,"").trim().split("
-").forEach(function(l){var p=l.split("	");if(p.length>=2)a.push([p[0].trim(),p.slice(1).join("	").trim()])});return a.filter(function(p){return p[0]&&p[1]})}
+function parse(t){var a=[];t.replace(//g,"").trim().split("\n").forEach(function(l){var p=l.split("	");if(p.length>=2)a.push([p[0].trim(),p.slice(1).join("	").trim()])});return a.filter(function(p){return p[0]&&p[1]})}
 function preview(){var a=parse(ta.value);E("preview").innerHTML=a.length?"Detected <b>"+a.length+"</b> pairs.<br>"+a[0][1]+" → "+a[0][0]:"No valid pairs detected."}
 function cats(load){var l=E("language").value,s=E("category"),o=document.createElement("option");s.innerHTML="";o.value="custom";o.textContent="Custom / Paste your own";s.appendChild(o);Object.keys(LIB[l]).forEach(function(k){var x=document.createElement("option");x.value=k;x.textContent=k;s.appendChild(x)});if(load){s.value=Object.keys(LIB[l])[0];loadCat()}else s.value="custom"}
-function loadCat(){var c=E("category").value;if(c==="custom")return;ta.value=LIB[E("language").value][c].map(function(x){return x[0]+"	"+x[1]}).join("
-");preview()}
+function loadCat(){var c=E("category").value;if(c==="custom")return;ta.value=LIB[E("language").value][c].map(function(x){return x[0]+"	"+x[1]}).join("\n");preview()}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function build(){queue=shuffle(vocab);var r=vocab.filter(function(v){return(misses[v.id]||0)>0});queue=queue.concat(shuffle(r));done=0}
 function next(){if(!queue.length){round++;speed=Math.min(.28,speed*1.08);spawnGap=Math.max(1050,spawnGap*.92);build();flash("ROUND "+round+" · SPEED UP!",1)}current=queue.shift();hud()}
@@ -105,8 +103,7 @@ function resize(){var r=wrap.getBoundingClientRect();W=Math.max(320,r.width);H=M
 function loop(n){if(!running||paused)return;if(!lastTime)lastTime=n;var dt=Math.min(.035,(n-lastTime)/1000);lastTime=n;update(dt,n);draw();if(running)raf=requestAnimationFrame(loop)}
 function pause(){if(!running)return;paused=!paused;E("pauseOverlay").classList.toggle("show",paused);E("pause").textContent=paused?"RESUME":"PAUSE";if(!paused){lastTime=0;raf=requestAnimationFrame(loop)}}
 E("play").onclick=start;E("again").onclick=start;E("restart").onclick=start;E("mainMenu").onclick=function(){running=false;cancelAnimationFrame(raf);game.classList.remove("active");menu.classList.add("active")};E("overMenu").onclick=E("mainMenu").onclick;E("pause").onclick=pause;
-E("swap").onclick=function(){var a=parse(ta.value);ta.value=a.map(function(x){return x[1]+"	"+x[0]}).join("
-");preview()};E("language").onchange=function(){cats(false);E("category").value="custom";lang=this.value;updateVoiceCheck()};E("category").onchange=loadCat;ta.oninput=function(){E("category").value="custom";preview()};E("sound").onclick=function(){soundOn=!soundOn;this.textContent=soundOn?"🔊 SOUND ON":"🔇 SOUND OFF"};E("testVoice").onclick=function(){lang=E("language").value;loadVoices();var samples={"de-DE":"Guten Morgen","es-ES":"Buenos días","da-DK":"Godmorgen","en-US":"Good morning"},v=voiceFor(lang);if(!v){updateVoiceCheck();return}var u=new SpeechSynthesisUtterance(samples[lang]||"Hello");u.voice=v;u.lang=v.lang;u.rate=.82;speechSynthesis.cancel();speechSynthesis.speak(u)};
+E("swap").onclick=function(){var a=parse(ta.value);ta.value=a.map(function(x){return x[1]+"	"+x[0]}).join("\n");preview()};E("language").onchange=function(){cats(false);E("category").value="custom";lang=this.value;updateVoiceCheck()};E("category").onchange=loadCat;ta.oninput=function(){E("category").value="custom";preview()};E("sound").onclick=function(){soundOn=!soundOn;this.textContent=soundOn?"🔊 SOUND ON":"🔇 SOUND OFF"};E("testVoice").onclick=function(){lang=E("language").value;loadVoices();var samples={"de-DE":"Guten Morgen","es-ES":"Buenos días","da-DK":"Godmorgen","en-US":"Good morning"},v=voiceFor(lang);if(!v){updateVoiceCheck();return}var u=new SpeechSynthesisUtterance(samples[lang]||"Hello");u.voice=v;u.lang=v.lang;u.rate=.82;speechSynthesis.cancel();speechSynthesis.speak(u)};
 window.addEventListener("keydown",function(e){
   var k=e.key.toLowerCase();
   if(!game.classList.contains("active"))return;
