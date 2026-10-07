@@ -15,7 +15,21 @@ button:active{transform:translate(2px,2px)}.primary{background:#79d85b}.yellow{b
 .hud{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin:7px 0;font:900 13px "Courier New";text-shadow:2px 2px #102744}.target{text-align:center;background:#f3d64e;color:#152945;border:4px solid #152945;padding:8px;font-size:clamp(15px,2vw,23px);text-shadow:none}.target b{color:#b52f49}.progress{text-align:right}
 .wrap{height:min(68vh,650px);max-height:calc(100vh - 170px);min-height:370px;position:relative;border:4px solid #102744;background:#397f45}canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
 .buttons{text-align:center}.tip{text-align:center;font-size:11px;font-weight:bold;color:#d9edff;text-shadow:2px 2px #102744}.overlay{display:none;position:absolute;inset:0;background:#102744e8;z-index:5;align-items:center;justify-content:center;text-align:center}.overlay.show{display:flex}.big{font:900 clamp(28px,5vw,48px) "Courier New";color:#ef6c88;text-shadow:4px 4px #000}.msg{font:900 clamp(17px,2.4vw,27px) "Courier New";margin:10px}.toast{display:none;position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:4;font:900 25px "Courier New";text-shadow:3px 3px #102744}
-@media(max-width:760px){.grid{grid-template-columns:1fr}.hud{grid-template-columns:1fr 1fr}.target{grid-column:1/-1;grid-row:1}.wrap{height:60vh;max-height:none}}
+.mobile-controls{display:none}
+@media(max-width:760px){
+.grid{grid-template-columns:1fr}
+#game.active{display:flex;flex-direction:column}
+#game .buttons{order:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:2px 0 5px}
+#game .buttons button{margin:0;padding:8px 2px;font-size:10px;min-width:0}
+#game .hud{order:2;grid-template-columns:1fr 1fr;margin:4px 0}
+#game .target{grid-column:1/-1;grid-row:1}
+#game .wrap{order:3;height:60vh;max-height:none}
+#game .mobile-controls{order:4;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 2px 3px}
+#game .mobile-controls button{margin:0;min-height:62px;font-size:15px;touch-action:none;user-select:none;-webkit-user-select:none}
+#game .mobile-controls .boost{background:#f3d64e}
+#game .mobile-controls .fire{grid-column:1/-1;background:#ef6c88;font-size:18px}
+#game .tip{display:none}
+}
 </style></head><body><main class="app"><div class="logo">WORD RACER</div>
 <section id="menu" class="screen active"><div class="grid"><div class="card"><h2>GAME SETTINGS</h2><div class="help">Choose a target language and vocabulary category.</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:7px"><div><div class="help"><b>Language</b></div><select id="language"><option value="de-DE">German</option><option value="es-ES">Spanish</option><option value="da-DK">Danish</option><option value="en-US">English</option></select></div><div><div class="help"><b>Vocabulary</b></div><select id="category"></select></div></div>
@@ -38,7 +52,8 @@ lernen	to learn</textarea>
 </div></section>
 <section id="game" class="screen"><div class="hud"><div>SCORE <span id="score">0</span> · <span id="lives">❤❤❤</span></div><div id="target" class="target"></div><div id="progress" class="progress"></div></div>
 <div id="wrap" class="wrap"><canvas id="canvas"></canvas><div id="toast" class="toast"></div><div id="pauseOverlay" class="overlay"><div><div class="big" style="color:#f3d64e">PAUSED</div></div></div><div id="gameOver" class="overlay"><div><div class="big">GAME OVER</div><div class="msg">Nice try, your grandma would be proud</div><button id="again" class="primary">PLAY AGAIN</button><button id="overMenu" class="pink">MAIN MENU</button></div></div></div>
-<div class="buttons"><button id="pause" class="yellow">PAUSE</button><button id="restart">RESTART</button><button id="mainMenu" class="pink">MAIN MENU</button><button id="sound">🔊 SOUND ON</button></div><div class="tip">DRIVE: ← → / A D · FIRE: SPACE · ACCELERATE: ↑ / W · PAUSE: P</div></section></main>
+<div class="buttons"><button id="pause" class="yellow">PAUSE</button><button id="restart">RESTART</button><button id="mainMenu" class="pink">MAIN MENU</button><button id="sound">🔊 SOUND ON</button></div>
+<div id="mobileControls" class="mobile-controls" aria-label="Touch controls"><button id="touchLeft" type="button">◀<br>LEFT</button><button id="touchBoost" class="boost" type="button">▲<br>BOOST</button><button id="touchRight" type="button">▶<br>RIGHT</button><button id="touchFire" class="fire" type="button">● FIRE</button></div><div class="tip">DRIVE: ← → / A D · FIRE: SPACE · ACCELERATE: ↑ / W · PAUSE: P</div></section></main>
 <script>
 (function(){"use strict";
 function E(x){return document.getElementById(x)} var ta=E("words"),menu=E("menu"),game=E("game"),canvas=E("canvas"),ctx=canvas.getContext("2d"),wrap=E("wrap");
@@ -64,7 +79,7 @@ function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(M
 function build(){queue=shuffle(vocab);var r=vocab.filter(function(v){return(misses[v.id]||0)>0});queue=queue.concat(shuffle(r));done=0}
 function next(){if(!queue.length){round++;speed=Math.min(.28,speed*1.08);spawnGap=Math.max(1050,spawnGap*.92);build();flash("ROUND "+round+" · SPEED UP!",1)}current=queue.shift();hud()}
 function hud(){E("score").textContent=score;E("lives").textContent="❤".repeat(Math.max(0,lives));E("target").innerHTML="FIND: <b>"+current.prompt.toUpperCase()+"</b>";E("progress").textContent="ROUND "+round+" · "+Math.min(done,vocab.length)+"/"+vocab.length+" WORDS"}
-function start(){var a=parse(ta.value);if(a.length<5){E("error").textContent="Please add at least 5 word pairs.";return}E("error").textContent="";lang=E("language").value;vocab=a.map(function(p,i){return{id:i,target:p[0],prompt:p[1]}});score=0;lives=3;round=1;done=0;misses={};speed=.16;spawnGap=1700;cars=[];shots=[];player.x=.5;invincible=0;roadScroll=0;boostFactor=1;keys={};running=true;paused=false;lastSpawn=0;lastTime=0;build();next();menu.classList.remove("active");game.classList.add("active");E("gameOver").classList.remove("show");resize();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
+function start(){var a=parse(ta.value);if(a.length<5){E("error").textContent="Please add at least 5 word pairs.";return}E("error").textContent="";lang=E("language").value;vocab=a.map(function(p,i){return{id:i,target:p[0],prompt:p[1]}});score=0;lives=3;round=1;done=0;misses={};speed=.16;spawnGap=1700;cars=[];shots=[];player.x=.5;invincible=0;roadScroll=0;boostFactor=1;keys={};running=true;paused=false;lastSpawn=0;lastTime=0;build();next();menu.classList.remove("active");game.classList.add("active");E("gameOver").classList.remove("show");E("pauseOverlay").classList.remove("show");E("pause").textContent="PAUSE";E("toast").style.display="none";resize();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
 function spawn(){var correctPresent=cars.some(function(c){return c.pair.id===current.id&&!c.dead}),pair;if(!correctPresent&&Math.random()<.48)pair=current;else pair=vocab[Math.floor(Math.random()*vocab.length)];var lanes=[.35,.5,.65];cars.push({x:lanes[Math.floor(Math.random()*3)],y:-.13,w:.105,h:.16,pair:pair,dead:false,style:Math.floor(Math.random()*4)})}
 function rect(x,y,w,h){return{x:x-w/2,y:y-h/2,w:w,h:h}}function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function correct(c){c.dead=true;score++;done++;misses[current.id]=Math.max(0,(misses[current.id]||0)-1);good();var t=c.pair.target;setTimeout(function(){speak(t)},130);flash("✓ "+t.toUpperCase(),1);next()}
@@ -102,7 +117,7 @@ function h(c){return c.h*H}
 function resize(){var r=wrap.getBoundingClientRect();W=Math.max(320,r.width);H=Math.max(350,r.height);DPR=Math.max(1,devicePixelRatio||1);canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+"px";canvas.style.height=H+"px";ctx.setTransform(DPR,0,0,DPR,0,0);draw()}
 function loop(n){if(!running||paused)return;if(!lastTime)lastTime=n;var dt=Math.min(.035,(n-lastTime)/1000);lastTime=n;update(dt,n);draw();if(running)raf=requestAnimationFrame(loop)}
 function pause(){if(!running)return;paused=!paused;E("pauseOverlay").classList.toggle("show",paused);E("pause").textContent=paused?"RESUME":"PAUSE";if(!paused){lastTime=0;raf=requestAnimationFrame(loop)}}
-E("play").onclick=start;E("again").onclick=start;E("restart").onclick=start;E("mainMenu").onclick=function(){running=false;cancelAnimationFrame(raf);game.classList.remove("active");menu.classList.add("active")};E("overMenu").onclick=E("mainMenu").onclick;E("pause").onclick=pause;
+E("play").onclick=start;E("again").onclick=start;E("restart").onclick=start;E("mainMenu").onclick=function(){running=false;paused=false;keys={};cancelAnimationFrame(raf);E("pauseOverlay").classList.remove("show");E("gameOver").classList.remove("show");E("pause").textContent="PAUSE";E("toast").style.display="none";game.classList.remove("active");menu.classList.add("active")};E("overMenu").onclick=E("mainMenu").onclick;E("pause").onclick=pause;
 E("swap").onclick=function(){var a=parse(ta.value);ta.value=a.map(function(x){return x[1]+"\t"+x[0]}).join("\n");preview()};E("language").onchange=function(){cats(false);E("category").value="custom";lang=this.value;updateVoiceCheck()};E("category").onchange=loadCat;ta.oninput=function(){E("category").value="custom";preview()};E("sound").onclick=function(){soundOn=!soundOn;this.textContent=soundOn?"🔊 SOUND ON":"🔇 SOUND OFF"};E("testVoice").onclick=function(){lang=E("language").value;loadVoices();var samples={"de-DE":"Guten Morgen","es-ES":"Buenos días","da-DK":"Godmorgen","en-US":"Good morning"},v=voiceFor(lang);if(!v){updateVoiceCheck();return}var u=new SpeechSynthesisUtterance(samples[lang]||"Hello");u.voice=v;u.lang=v.lang;u.rate=.82;speechSynthesis.cancel();speechSynthesis.speak(u)};
 window.addEventListener("keydown",function(e){
   var k=e.key.toLowerCase();
@@ -122,5 +137,7 @@ window.addEventListener("keyup",function(e){
   if(k==="arrowleft"||k==="a")keys.left=false;
   if(k==="arrowright"||k==="d")keys.right=false;
   if(k==="arrowup"||k==="w")keys.boost=false;
-},{passive:false});window.addEventListener("resize",resize);cats(false);preview();
+},{passive:false});function bindHold(id,key){var b=E(id);function on(e){e.preventDefault();keys[key]=true;if(b.setPointerCapture)try{b.setPointerCapture(e.pointerId)}catch(x){}}function off(e){if(e)e.preventDefault();keys[key]=false}b.addEventListener("pointerdown",on,{passive:false});b.addEventListener("pointerup",off,{passive:false});b.addEventListener("pointercancel",off,{passive:false});b.addEventListener("lostpointercapture",off,{passive:false})}
+bindHold("touchLeft","left");bindHold("touchRight","right");bindHold("touchBoost","boost");E("touchFire").addEventListener("pointerdown",function(e){e.preventDefault();fire()},{passive:false});
+window.addEventListener("resize",resize);cats(false);preview();
 })();</script></body></html>
