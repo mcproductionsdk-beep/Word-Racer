@@ -253,15 +253,15 @@ async function createStudentLink(){
   E("shareStatus").textContent="Saving this vocabulary set…";
 
   try{
-    var response=await fetch(VOCAB_API+"/sets",{
+    var controller=new AbortController();var timer=setTimeout(function(){controller.abort()},12000);var response;try{response=await fetch(VOCAB_API+"/sets",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         title:currentSetTitle(),
         language:E("language").value,
         pairs:pairs
-      })
-    });
+      }),signal:controller.signal
+    })}finally{clearTimeout(timer)}
 
     var data=null;
     try{data=await response.json()}catch(parseError){}
@@ -282,7 +282,7 @@ async function createStudentLink(){
   }catch(err){
     console.error("Could not create vocabulary set:",err);
     lastStudentLink="";
-    E("shareStatus").textContent="Could not save this set. Please try again.";
+    E("shareStatus").textContent="Could not save this set: "+(err.name==="AbortError"?"Request timed out after 12 seconds":err.message||"Unknown error");
   }finally{
     sharingBusy=false;
     button.disabled=false;
@@ -297,7 +297,7 @@ async function copyStudentLink(){
     var x=document.createElement("textarea");x.value=lastStudentLink;document.body.appendChild(x);
     x.select();document.execCommand("copy");x.remove();
   }
-  E("shareStatus").textContent="✓ LINK COPIED — ready to send to students.";
+  E("shareStatus").textContent="✓ LINK READY: "+lastStudentLink;
 }
 
 function normalizeLoadedPairs(data){
