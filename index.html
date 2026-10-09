@@ -38,26 +38,36 @@ button:active{transform:translate(2px,2px)}.primary{background:#79d85b}.yellow{b
 .shareRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .shareRow button{flex:1 1 180px}
 #copyStudentLink{display:none;background:#f3d64e}
-#studentIntro{display:none;padding:14px;background:#d8eef0;border:4px solid #152945;color:#19324e;text-align:center}
+#studentIntro{display:none}
 #studentIntro.show{display:block}
-.studentBadge{display:inline-block;background:#79d85b;border:3px solid #152945;padding:6px 9px;font:900 12px "Courier New";margin:5px}
-.studentTitle{font:900 18px "Courier New";color:#b52f49;margin:8px 0}
-.studentMeta{font:900 12px "Courier New";margin-bottom:10px}
-.howTo{margin-top:8px}
-.howTo summary{cursor:pointer;font:900 12px "Courier New";color:#19324e}
-.howTo div{font:700 11px "Courier New";line-height:1.5;margin-top:7px}
+.studentBadge{display:none}
+.studentTitle{font:900 clamp(22px,3vw,34px) "Courier New";color:#176b43;margin:0 0 22px;text-transform:uppercase}
+.studentMeta{font:900 clamp(14px,2vw,18px) "Courier New";color:#152945;margin-bottom:28px}
+.howTo{margin-top:18px}
+.howTo summary{cursor:pointer;font:900 14px "Courier New";color:#152945}
+.howTo div{font:700 12px "Courier New";line-height:1.5;margin:10px auto 0;max-width:620px}
+body.studentMode{background:#172b52}
+body.studentMode .app{width:min(1120px,calc(100vw - 28px));min-height:calc(100vh - 28px);margin:14px auto;padding:22px;background:#213f6d;border:5px solid #102744;box-shadow:0 0 0 4px #f3d64e}
+body.studentMode .logo{color:#f3d64e;font-size:clamp(34px,5vw,58px);margin:4px 0 28px}
 body.studentMode .teacherOnly{display:none!important}
-body.studentMode #studentIntro{display:block}
+body.studentMode #menu{display:block}
+body.studentMode #menu>.grid{display:none!important}
+body.studentMode #studentIntro{display:block;width:min(760px,92%);margin:0 auto;padding:34px 28px;background:#f4e7bd;border:5px solid #152945;color:#152945;text-align:center;box-shadow:inset 0 0 0 3px #fff5d7}
+body.studentMode #studentPlay{display:block;width:100%;margin:0;background:#79d85b;color:#102744;font-size:clamp(18px,2.5vw,24px);padding:14px}
+@media(max-width:760px){
+body.studentMode .app{width:calc(100vw - 16px);min-height:calc(100vh - 16px);margin:8px auto;padding:14px}
+body.studentMode .logo{margin-bottom:18px}
+body.studentMode #studentIntro{width:100%;padding:24px 14px}
+}
 
 </style></head><body><main class="app"><div class="logo">WORD RACER</div>
 <section id="menu" class="screen active">
 <div id="studentIntro">
-  <div class="studentBadge">✓ TEACHER SET LOADED</div>
   <div class="studentTitle" id="studentSetTitle">VOCABULARY SET</div>
   <div class="studentMeta" id="studentSetMeta">READY TO PLAY</div>
-  <button id="studentPlay" class="pink" type="button">🏁 START GAME</button>
+  <button id="studentPlay" class="primary" type="button">PLAY</button>
   <details class="howTo">
-    <summary>? HOW TO PLAY</summary>
+    <summary>▶ HOW TO PLAY</summary>
     <div>← → STEER &nbsp; · &nbsp; ↑ ACCELERATE &nbsp; · &nbsp; SPACE SHOOT<br>Shoot the correct translation. Missed words return for extra practice.</div>
   </details>
 </div>
