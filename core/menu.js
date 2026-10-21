@@ -17,6 +17,11 @@ export function mountTeacherMenu(root,services,options={}){
   const lang=byId("language"),category=byId("category"),words=byId("words"),preview=byId("preview"),error=byId("error"),voiceStatus=byId("voiceCheck");
   const testVoice=byId("testVoice"),swap=byId("swap"),share=byId("shareStudentLink"),play=byId("play"),shareStatus=byId("shareStatus");
   const title={value:options.defaultSetTitle??"My vocabulary"};
+  const titleInput=el("input","setTitleInput");titleInput.id="setTitle";titleInput.type="text";titleInput.maxLength=100;titleInput.placeholder="e.g. Unit 3 – My Family";titleInput.value=title.value;
+  const titleLabel=el("label","fieldLabel","Vocabulary list name");titleLabel.htmlFor="setTitle";words.before(titleLabel,titleInput);
+  let customTitle=title.value;
+  function setTitleFromCategory(){if(category.value){titleInput.value=category.value;}else{titleInput.value=customTitle;}title.value=titleInput.value.trim();}
+  titleInput.addEventListener("input",()=>{title.value=titleInput.value.trim();if(!category.value)customTitle=titleInput.value;},{signal});
   menuSection.querySelector(".teacherHowTo div").textContent=options.instructions??"Select the correct translation.";
   const cats=options.categories??{};
   let customDraft=options.defaultText??"";
@@ -26,12 +31,12 @@ export function mountTeacherMenu(root,services,options={}){
   function setCategories(){category.replaceChildren();const custom=el("option","","Custom vocabulary");custom.value="";category.append(custom);for(const key of Object.keys(cats[lang.value]??{})){const opt=el("option","",key);opt.value=key;category.append(opt);}}
   function current(){const parsed=parsePairs(words.value);const checked=validateSet({title:title.value,language:lang.value,pairs:parsed.pairs},{minPairs:options.minPairs??5});return {parsed,checked};}
   function refresh(){const {parsed}=current();preview.textContent=parsed.pairs.length+" vocabulary pairs"+(parsed.rejectedLines.length?" · Invalid lines: "+parsed.rejectedLines.join(", "):"");}
-  function loadCategory(){const pairs=cats[lang.value]?.[category.value];if(pairs){words.value=pairs.map(p=>p.join("\t")).join("\n");refresh();}else{words.value=customDraft;refresh();}}
+  function loadCategory(){setTitleFromCategory();const pairs=cats[lang.value]?.[category.value];if(pairs){words.value=pairs.map(p=>p.join("\t")).join("\n");refresh();}else{words.value=customDraft;refresh();}}
   setCategories();words.value=customDraft;const initialCategory=options.defaultCategory??Object.keys(cats[lang.value]??{})[0];if(initialCategory&&cats[lang.value]?.[initialCategory]){category.value=initialCategory;loadCategory();}else refresh();
-  lang.addEventListener("change",()=>{const wasCustom=category.value==="";const previous=category.value;setCategories();if(!wasCustom&&cats[lang.value]?.[previous]){category.value=previous;loadCategory();}else{category.value="";words.value=customDraft;refresh();}},{signal});
+  lang.addEventListener("change",()=>{const wasCustom=category.value==="";const previous=category.value;setCategories();if(!wasCustom&&cats[lang.value]?.[previous]){category.value=previous;loadCategory();}else{category.value="";words.value=customDraft;setTitleFromCategory();refresh();}},{signal});
   category.addEventListener("change",loadCategory,{signal});
-  words.addEventListener("input",()=>{category.value="";customDraft=words.value;refresh();},{signal});
-  swap.addEventListener("click",()=>{const {parsed}=current();if(parsed.rejectedLines.length){error.textContent="Correct invalid lines before swapping.";return;}words.value=swapPairs(parsed.pairs).map(p=>p.join("\t")).join("\n");error.textContent="";category.value="";customDraft=words.value;refresh();},{signal});
+  words.addEventListener("input",()=>{category.value="";customDraft=words.value;setTitleFromCategory();refresh();},{signal});
+  swap.addEventListener("click",()=>{const {parsed}=current();if(parsed.rejectedLines.length){error.textContent="Correct invalid lines before swapping.";return;}words.value=swapPairs(parsed.pairs).map(p=>p.join("\t")).join("\n");error.textContent="";category.value="";customDraft=words.value;setTitleFromCategory();refresh();},{signal});
   testVoice.addEventListener("click",async()=>{const examples={"es-ES":"Hola, buenos días","de-DE":"Hallo, guten Morgen","da-DK":"Hej, godmorgen","en-US":"Hello, good morning"};const phrase=examples[lang.value]??"Hello, good morning";voiceStatus.textContent="VOICE: testing…";try{const result=await services.voice.speak(phrase,lang.value);if(!signal.aborted)voiceStatus.textContent="VOICE: "+result.status;}catch{if(!signal.aborted)voiceStatus.textContent="VOICE: unavailable";}},{signal});
   play.addEventListener("click",async()=>{const {parsed,checked}=current();if(parsed.rejectedLines.length||!checked.ok){error.textContent=parsed.rejectedLines.length?"Correct invalid vocabulary lines.":checked.error.message;return;}error.textContent="";await options.onPlay?.(checked.value);},{signal});
   share.addEventListener("click",async()=>{
@@ -41,11 +46,11 @@ export function mountTeacherMenu(root,services,options={}){
     try{
       const {id}=await services.sharing.saveSet(checked.value);
       if(signal.aborted)return;
-      const url=buildStudentUrl(options.previewGameUrl??location.href,id);
+      const url=new URL("/set/"+encodeURIComponent(id),"https://boringteacher.com").href;
       const link=el("a","",url);link.href=url;link.target="_blank";link.rel="noopener";
       const copy=button("COPY LINK","yellow");
       copy.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(url);copy.textContent="COPIED";}catch{copy.textContent="Select the link above to copy."; }},{signal});
-      shareStatus.replaceChildren(link,el("div","", " "),copy,el("div","", "Preview link: do not distribute as a permanent classroom URL."));
+      shareStatus.replaceChildren(link,el("div","", " "),copy);
     }catch(e){if(!signal.aborted)shareStatus.textContent=e.message??"Could not share vocabulary.";}
     finally{if(!signal.aborted)share.disabled=false;}
   },{signal});
