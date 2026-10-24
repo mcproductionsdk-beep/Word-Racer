@@ -19,7 +19,7 @@ const root=document.getElementById("app"),frame=document.getElementById("racerFr
 const sharing=createSharingClient({apiBaseUrl:"https://boringteacher-vocabulary-api.mcproductionsdk.workers.dev"});
 const voice=createVoiceService();let menu=null;
 const instructions="ARROW KEYS / WASD = steer · P = pause. Eat the correct target-language word. Wrong words cost a life. The drive safely.";
-const options={title:"WORD RACER",instructions,categories:WAREHOUSE_CATEGORIES,defaultCategory:"Animals",defaultText:"",defaultPromptLanguage:"en-US",defaultLanguage:"es-ES",previewGameUrl:location.href,onPlay:start};
+const options={title:"WORD RACER",instructions,categories:WAREHOUSE_CATEGORIES,defaultCategory:"Animals",defaultText:"",defaultPromptLanguage:"en-US",defaultLanguage:"es-ES",previewGameUrl:new URL("./mobile-test.html",location.href).href,onPlay:start};
 const V1_LIBRARY_URL="https://boringteacher.com/libraries/vocabulary/v1.json";
 const V2_LIBRARY_URL="https://boringteacher.com/libraries/vocabulary/v2.json";
 async function loadBuiltInVocabulary(){
