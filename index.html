@@ -18,7 +18,7 @@ import { LANGUAGE_OPTIONS,categoriesForPair } from "./core/multilingual-vocabula
 const root=document.getElementById("app"),frame=document.getElementById("racerFrame");
 // Mobile-only production routing. Desktop retains its original racer-game.html engine.
 const useMobileRacer=window.matchMedia("(pointer:coarse) and (max-width:760px) and (orientation:portrait)").matches;
-if(useMobileRacer){frame.src="./racer-mobile-preview.html?release=thumb-deck-production-v1";frame.style.height="100dvh";frame.style.minHeight="0";}
+if(useMobileRacer){frame.src="./racer-mobile-preview.html?release=mobile-traffic-balance-v4";frame.style.height="100dvh";frame.style.minHeight="0";}
 
 const sharing=createSharingClient({apiBaseUrl:"https://boringteacher-vocabulary-api.mcproductionsdk.workers.dev"});
 const voice=createVoiceService();let menu=null;
