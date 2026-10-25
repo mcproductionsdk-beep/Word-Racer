@@ -116,7 +116,7 @@ function spawn(){
  lastTrafficLane=lane;
  cars.push({x:trafficLanes[lane],lane:lane,y:-.13,w:.073,h:.16,pair:pair,dead:false,style:style});
 }
-function carHitbox(c){var visibleWidth=Math.min(c.w*W*.94,c.h*H*.68)/W;return rect(c.x,c.y,visibleWidth,c.h*.94)}
+function carHitbox(c){/* Match the full outer pixel-art silhouette, including wheels. */var outerWidth=Math.min(c.w*W*.94,c.h*H*.68);return rect(c.x,c.y,outerWidth*.98/W,c.h*.98)}
 function rect(x,y,w,h){return{x:x-w/2,y:y-h/2,w:w,h:h}}function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function correct(c){lastCorrectLane=c.lane;lastCorrectColor=c.style;correctLane=-1;correctColor=-1;c.dead=true;score++;done++;misses[current.id]=Math.max(0,(misses[current.id]||0)-1);good();var t=c.pair.target;setTimeout(function(){speak(t)},130);flash("✓ "+t.toUpperCase(),1);next()}
 function wrong(c){c.dead=true;misses[current.id]=Math.min(2,(misses[current.id]||0)+1);hurt("✕ "+c.pair.target.toUpperCase())}
@@ -166,7 +166,7 @@ ctx.fillStyle="#152945";ctx.fillRect(lx-tw/2-2,ly-11,tw+4,22);
 ctx.fillStyle="#f3d64e";ctx.fillRect(lx-tw/2,ly-9,tw,18);
 ctx.fillStyle="#152945";ctx.fillText(c.pair.target,lx,ly,tw-7);
 });
-ctx.save();ctx.font="bold 12px Courier New";ctx.textAlign="left";ctx.textBaseline="top";ctx.fillStyle="#ffffff";ctx.fillText("DESKTOP PROTOTYPE V7 · MATCHED CAR BODIES",W*.245,9);ctx.restore();
+ctx.save();ctx.font="bold 12px Courier New";ctx.textAlign="left";ctx.textBaseline="top";ctx.fillStyle="#ffffff";ctx.fillText("DESKTOP PROTOTYPE V8 · FULL-BODY COLLISIONS",W*.245,9);ctx.restore();
 shots.forEach(function(s){ctx.fillStyle="#6ffaff";ctx.fillRect(s.x*W-3,s.y*H-12,6,22)});ctx.save();if(invincible>0&&Math.floor(invincible*12)%2===0)ctx.globalAlpha=.35;car(player.x,player.y,player.w,player.h,0,true);ctx.restore();
 if(current){ctx.font="900 "+Math.max(10,Math.min(14,H*.022))+"px Courier New";var t=current.prompt.toUpperCase(),tw=Math.min(ctx.measureText(t).width+16,W*.22),x=player.x*W-tw/2,y=player.y*H+player.h*H*.55;ctx.fillStyle="#152945";ctx.fillRect(x-2,y-2,tw+4,25);ctx.fillStyle="#fff8d9";ctx.fillRect(x,y,tw,21);ctx.fillStyle="#b52f49";ctx.textAlign="center";ctx.fillText(t,player.x*W,y+11,tw-5)}}
 function h(c){return c.h*H}
