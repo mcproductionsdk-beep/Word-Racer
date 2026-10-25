@@ -116,6 +116,7 @@ function spawn(){
  lastTrafficLane=lane;
  cars.push({x:trafficLanes[lane],lane:lane,y:-.13,w:.073,h:.16,pair:pair,dead:false,style:style});
 }
+function carHitbox(c){var visibleWidth=Math.min(c.w*.72,c.h*H/W*.72);return rect(c.x,c.y,visibleWidth*.96,c.h*.92)}
 function rect(x,y,w,h){return{x:x-w/2,y:y-h/2,w:w,h:h}}function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function correct(c){lastCorrectLane=c.lane;lastCorrectColor=c.style;correctLane=-1;correctColor=-1;c.dead=true;score++;done++;misses[current.id]=Math.max(0,(misses[current.id]||0)-1);good();var t=c.pair.target;setTimeout(function(){speak(t)},130);flash("✓ "+t.toUpperCase(),1);next()}
 function wrong(c){c.dead=true;misses[current.id]=Math.min(2,(misses[current.id]||0)+1);hurt("✕ "+c.pair.target.toUpperCase())}
@@ -128,8 +129,8 @@ boostFactor+=(targetBoost-boostFactor)*Math.min(1,dt*8);
 var driveSpeed=speed*boostFactor;
 
 roadScroll+=driveSpeed*dt;if(invincible>0)invincible-=dt;var move=.48*dt;if(keys.left)player.x-=move;if(keys.right)player.x+=move;player.x=Math.max(.27,Math.min(.73,player.x));if(now-lastSpawn>spawnGap/boostFactor){spawn();lastSpawn=now}cars.forEach(function(c){c.y+=driveSpeed*dt});shots.forEach(function(s){s.y-=.75*dt});
-var pb=rect(player.x,player.y,player.w*.88,player.h*.82);cars.forEach(function(c){if(c.dead)return;if(hit(pb,rect(c.x,c.y,c.w*.96,c.h*.78)))answer(c)});
-shots.forEach(function(s){if(s.dead)return;for(var i=0;i<cars.length;i++){var c=cars[i];if(!c.dead&&hit({x:s.x-.008,y:s.y-.02,w:.016,h:.04},rect(c.x,c.y,c.w*.96,c.h*.82))){s.dead=true;answer(c);break}}});
+var pb=carHitbox(player);cars.forEach(function(c){if(c.dead)return;if(hit(pb,carHitbox(c)))answer(c)});
+shots.forEach(function(s){if(s.dead)return;for(var i=0;i<cars.length;i++){var c=cars[i];if(!c.dead&&hit({x:s.x-.008,y:s.y-.02,w:.016,h:.04},carHitbox(c))){s.dead=true;answer(c);break}}});
 cars=cars.filter(function(c){return!c.dead&&c.y<1.18});shots=shots.filter(function(s){return!s.dead&&s.y>-.1})}
 function audio(){if(!soundOn)return null;try{var A=window.AudioContext||window.webkitAudioContext;if(!A)return null;if(!audioCtx)audioCtx=new A();if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx}catch(e){return null}}
 function beep(f,d,e){var a=audio();if(!a)return;try{var o=a.createOscillator(),g=a.createGain(),n=a.currentTime;o.type="square";o.frequency.setValueAtTime(f,n);if(e)o.frequency.exponentialRampToValueAtTime(e,n+d);g.gain.setValueAtTime(.035,n);g.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(g);g.connect(a.destination);o.start();o.stop(n+d)}catch(x){}}
@@ -156,7 +157,7 @@ ctx.fillStyle="#152945";ctx.fillRect(lx-tw/2-2,ly-11,tw+4,22);
 ctx.fillStyle="#f3d64e";ctx.fillRect(lx-tw/2,ly-9,tw,18);
 ctx.fillStyle="#152945";ctx.fillText(c.pair.target,lx,ly,tw-7);
 });
-ctx.save();ctx.font="bold 12px Courier New";ctx.textAlign="left";ctx.textBaseline="top";ctx.fillStyle="#ffffff";ctx.fillText("DESKTOP PROTOTYPE V5 · FIVE-LANE TRAFFIC",W*.245,9);ctx.restore();
+ctx.save();ctx.font="bold 12px Courier New";ctx.textAlign="left";ctx.textBaseline="top";ctx.fillStyle="#ffffff";ctx.fillText("DESKTOP PROTOTYPE V6 · PRECISE CAR COLLISIONS",W*.245,9);ctx.restore();
 shots.forEach(function(s){ctx.fillStyle="#6ffaff";ctx.fillRect(s.x*W-3,s.y*H-12,6,22)});ctx.save();if(invincible>0&&Math.floor(invincible*12)%2===0)ctx.globalAlpha=.35;car(player.x,player.y,player.w,player.h,0,true);ctx.restore();
 if(current){ctx.font="900 "+Math.max(10,Math.min(14,H*.022))+"px Courier New";var t=current.prompt.toUpperCase(),tw=Math.min(ctx.measureText(t).width+16,W*.22),x=player.x*W-tw/2,y=player.y*H+player.h*H*.55;ctx.fillStyle="#152945";ctx.fillRect(x-2,y-2,tw+4,25);ctx.fillStyle="#fff8d9";ctx.fillRect(x,y,tw,21);ctx.fillStyle="#b52f49";ctx.textAlign="center";ctx.fillText(t,player.x*W,y+11,tw-5)}}
 function h(c){return c.h*H}
