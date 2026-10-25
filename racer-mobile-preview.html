@@ -87,13 +87,13 @@ button{min-height:48px}
 function E(x){return document.getElementById(x)} var game=E("game"),canvas=E("canvas"),ctx=canvas.getContext("2d"),wrap=E("wrap");
 
 var W=900,H=600,DPR=1,vocab=[],queue=[],current=null,cars=[],shots=[],misses={},score=0,lives=3,round=1,done=0,speed=.16,spawnGap=1700,lastSpawn=0,lastTime=0,running=false,paused=false,soundOn=true,audioCtx=null,lang="de-DE",raf=0,invincible=0,roadScroll=0,keys={},boostFactor=1;
-var player={x:.5,y:.80,w:.075,h:.14};
+var player={x:.5,y:.80,w:.105,h:.14};
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function build(){queue=shuffle(vocab);var r=vocab.filter(function(v){return(misses[v.id]||0)>0});queue=queue.concat(shuffle(r));done=0}
 function next(){if(!queue.length){round++;speed=Math.min(.28,speed*1.08);spawnGap=Math.max(1050,spawnGap*.92);build();flash("ROUND "+round+" · SPEED UP!",1)}current=queue.shift();hud()}
 function hud(){E("score").textContent=score;E("lives").textContent="❤".repeat(Math.max(0,lives));E("target").innerHTML="FIND: <b>"+current.prompt.toUpperCase()+"</b>";E("progress").textContent="ROUND "+round+" · "+Math.min(done,vocab.length)+"/"+vocab.length+" WORDS"}
 function start(pairs,locale){if(!Array.isArray(pairs)||pairs.length<5)return false;lang=locale||"es-ES";vocab=pairs.map(function(p,i){return{id:i,target:p[0],prompt:p[1]}});score=0;lives=3;round=1;done=0;misses={};speed=.16;spawnGap=1700;cars=[];shots=[];player.x=.5;invincible=0;roadScroll=0;boostFactor=1;keys={};running=true;paused=false;lastSpawn=0;lastTime=0;build();next();game.classList.add("active");E("gameOver").classList.remove("show");E("pauseOverlay").classList.remove("show");E("pause").textContent="PAUSE";E("toast").style.display="none";resize();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);return true}
-function spawn(){var correctPresent=cars.some(function(c){return c.pair.id===current.id&&!c.dead}),pair;if(!correctPresent&&Math.random()<.48)pair=current;else pair=vocab[Math.floor(Math.random()*vocab.length)];var lanes=[.29,.5,.71];cars.push({x:lanes[Math.floor(Math.random()*3)],y:-.13,w:.105,h:.16,pair:pair,dead:false,style:Math.floor(Math.random()*4)})}
+function spawn(){var correctPresent=cars.some(function(c){return c.pair.id===current.id&&!c.dead}),pair;if(!correctPresent&&Math.random()<.48)pair=current;else pair=vocab[Math.floor(Math.random()*vocab.length)];var lanes=[.29,.5,.71];cars.push({x:lanes[Math.floor(Math.random()*3)],y:-.13,w:.145,h:.16,pair:pair,dead:false,style:Math.floor(Math.random()*4)})}
 function rect(x,y,w,h){return{x:x-w/2,y:y-h/2,w:w,h:h}}function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function correct(c){c.dead=true;score++;done++;misses[current.id]=Math.max(0,(misses[current.id]||0)-1);good();var t=c.pair.target;setTimeout(function(){speak(t)},130);flash("✓ "+t.toUpperCase(),1);next()}
 function wrong(c){c.dead=true;misses[current.id]=Math.min(2,(misses[current.id]||0)+1);hurt("✕ "+c.pair.target.toUpperCase())}
