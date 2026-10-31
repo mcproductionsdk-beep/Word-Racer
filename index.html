@@ -1,52 +1,105 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Word Racer — Boring Teacher Game Lab</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Racer — Boring Teacher</title>
 <style>
-body{margin:0;background:#10192e;color:#f8f8ff;font:16px "Courier New",monospace}
-#racerFrame{display:none;width:100%;height:calc(100dvh - 12px);min-height:600px;border:0;background:#16264e}
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#10192e;color:#f8f8ff;font-family:"Courier New",monospace}
+#racerFrame{display:none;width:100%;height:100dvh;min-height:480px;border:0;background:#16264e}
 #racerFrame.playing{display:block}
-#status{max-width:680px;margin:8vh auto;padding:28px;border:5px solid #f3d64e;background:#18375e;text-align:center}
-a{color:#f3d64e}button{background:#f3d64e;color:#152945;border:3px solid #152945;padding:12px 18px;font:900 16px "Courier New";cursor:pointer}
+#app{min-height:100dvh;display:grid;place-items:center;padding:20px}
+#app[hidden]{display:none!important}
+.card{width:min(560px,100%);background:#233958;border:4px solid #7bbaf3;padding:24px;box-shadow:6px 6px #071328}
+h1{margin:0 0 14px;color:#f2d64b;font-size:clamp(24px,6vw,38px)}
+p{line-height:1.6;overflow-wrap:anywhere}
+a{display:inline-block;color:#10192e;background:#f2d64b;border:3px solid #10192e;padding:12px 18px;font-weight:900;text-decoration:none;margin-top:10px}
+a:focus-visible{outline:3px solid white;outline-offset:3px}
 </style>
 </head>
 <body>
-<main id="status" role="status" aria-live="polite">Loading shared vocabulary…</main>
+<main id="app" role="status" aria-live="polite">
+  <section class="card">
+    <h1>WORD RACER</h1>
+    <p id="message">Loading vocabulary…</p>
+    <a id="home" href="https://boringteacher.com/">RETURN TO WORD GAMES</a>
+  </section>
+</main>
 <iframe id="racerFrame" title="Word Racer gameplay" src="./racer-game.html"></iframe>
 <script type="module">
-import { createSharingClient,readStudentSetId } from "./core/sharing.js";
-import { createVoiceService } from "./core/voice.js";
+import {createSharingClient,readStudentSetId} from "./core/sharing.js";
+import {createVoiceService} from "./core/voice.js";
+import {isSupportedLocale} from "./core/languages.js";
+const HOME="https://boringteacher.com/";
+const root=document.getElementById("app");
+const message=document.getElementById("message");
 const frame=document.getElementById("racerFrame");
-const status=document.getElementById("status");
-const voice=createVoiceService();
 const sharing=createSharingClient({apiBaseUrl:"https://boringteacher-vocabulary-api.mcproductionsdk.workers.dev"});
-const dashboard="./test-menu.html";
-const isMobile=window.matchMedia("(pointer:coarse) and (max-width:760px) and (orientation:portrait)").matches;
-if(isMobile){frame.src="./racer-mobile-preview.html";frame.style.height="100dvh";frame.style.minHeight="0";}
-let ready=false,pending=null;
-function showError(message){status.hidden=false;frame.classList.remove("playing");status.replaceChildren();const p=document.createElement("p");p.textContent=message;const a=document.createElement("a");a.href=dashboard;a.textContent="RETURN TO WORD GAMES";status.append(p,a);}
-function deliver(){if(!ready||!pending)return;frame.contentWindow.postMessage({type:"BT_RACER_START",pairs:pending.pairs,language:pending.language},location.origin);pending=null;}
+const voice=createVoiceService();
+const id=readStudentSetId(location.href);
+const mobile=matchMedia("(pointer:coarse) and (max-width:760px) and (orientation:portrait)").matches;
+if(mobile){frame.src="./racer-mobile-preview.html";frame.style.minHeight="0";}
+let ready=false,started=false,pending=null,startTimer=null,finished=false;
+function error(text){
+ if(finished)return;
+ clearTimeout(startTimer);pending=null;voice.cancel();
+ message.textContent=text;root.hidden=false;frame.classList.remove("playing");
+}
+function send(type,extra={}){frame.contentWindow?.postMessage({type,...extra},location.origin);}
+function deliver(){
+ if(ready&&pending){
+  send("BT_RACER_START",{pairs:pending.pairs,language:pending.language});
+  pending=null;
+ }
+}
+function launch(set){
+ if(finished)return;
+ if(!set||!Array.isArray(set.pairs)||set.pairs.length<5||set.pairs.length>200||
+    !isSupportedLocale(set.language)||!isSupportedLocale(set.promptLanguage)||
+    set.language===set.promptLanguage||
+    set.pairs.some(p=>!Array.isArray(p)||p.length!==2||p.some(w=>typeof w!=="string"||!w.trim()))){
+  error("This vocabulary set is invalid or uses unsupported languages. Return to Word Games.");
+  return;
+ }
+ // The homepage and both engines use [prompt,target], in that order.
+ pending=set;root.hidden=true;frame.classList.add("playing");started=false;
+ clearTimeout(startTimer);
+ startTimer=setTimeout(()=>{if(!started)error("Word Racer did not start. Return to Word Games and try again.");},12000);
+ deliver();send("BT_RACER_PING");
+}
+function returnHome(){
+ finished=true;clearTimeout(startTimer);voice.cancel();
+ try{
+  const ref=new URL(document.referrer);
+  if(ref.origin===new URL(HOME).origin&&(ref.pathname==="/"||ref.pathname==="/dev/word-games/")&&history.length>1){
+   history.back();return;
+  }
+ }catch{}
+ const dest=new URL(HOME);
+ if(id)dest.hash="set="+encodeURIComponent(id);
+ location.assign(dest.toString());
+}
 window.addEventListener("message",event=>{
  if(event.origin!==location.origin||event.source!==frame.contentWindow)return;
- const data=event.data||{};
- if(data.type==="BT_RACER_READY"){ready=true;deliver();}
- if(data.type==="BT_RACER_SPEAK"&&typeof data.text==="string"&&data.text.length<=250&&["es-ES","de-DE","da-DK","en-US","fr-FR","it-IT"].includes(data.language))void voice.speak(data.text,data.language);
- if(data.type==="BT_RACER_CANCEL_SPEECH")voice.cancel();
- if(data.type==="BT_RACER_MENU")location.assign(dashboard);
- if(data.type==="BT_RACER_START_FAILED")showError("Word Racer could not start this vocabulary set.");
+ const d=event.data||{};
+ if(d.type==="BT_RACER_READY"){ready=true;deliver();}
+ if(d.type==="BT_RACER_STARTED"){started=true;clearTimeout(startTimer);frame.focus();}
+ if(d.type==="BT_RACER_START_FAILED")error("Word Racer could not open this vocabulary set. Return to Word Games.");
+ if(d.type==="BT_RACER_SPEAK"&&typeof d.text==="string"&&d.text.length<=250&&isSupportedLocale(d.language))void voice.speak(d.text,d.language);
+ if(d.type==="BT_RACER_CANCEL_SPEECH")voice.cancel();
+ if(d.type==="BT_RACER_MENU")returnHome();
 });
-frame.addEventListener("load",()=>{ready=false;frame.contentWindow?.postMessage({type:"BT_RACER_PING"},location.origin);});
-const id=readStudentSetId(location.href);
-if(!id){showError("Select vocabulary in the temporary test menu, then launch Word Racer.");}
-else{
- try{
-  const set=await sharing.loadSet(id);
-  if(!Array.isArray(set.pairs)||set.pairs.length<5)throw Error("At least five word pairs are required.");
-  pending={pairs:set.pairs,language:set.language};
-  status.hidden=true;frame.classList.add("playing");deliver();
-  frame.contentWindow?.postMessage({type:"BT_RACER_PING"},location.origin);
- }catch(error){console.error("Word Racer set loading failed",error);showError("Unable to load this shared vocabulary set.");}
+frame.addEventListener("load",()=>{ready=false;send("BT_RACER_PING");});
+window.addEventListener("pagehide",()=>{clearTimeout(startTimer);voice.cancel();});
+if(!id){
+ error(location.hash?"Invalid or missing vocabulary set ID. Open the link provided by your teacher.":"Select your vocabulary on the Boring Teacher homepage, then choose Word Racer.");
+}else{
+ message.textContent="Loading shared vocabulary…";
+ sharing.loadSet(id).then(launch).catch(err=>error("Unable to load the shared vocabulary: "+(err?.message||"Unknown error")+". Return to Word Games."));
 }
+send("BT_RACER_PING");
 </script>
-</body></html>
+</body>
+</html>
