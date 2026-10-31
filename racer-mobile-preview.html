@@ -92,6 +92,18 @@ button{min-height:48px}
 #game .buttons{order:4!important}
 #game .tip{order:5!important;display:none}
 }
+
+/* Word Snake-aligned accessible mobile buttons: visible, high contrast, touch safe. */
+@media(max-width:760px) and (orientation:portrait){
+ #game .thumb-deck{display:none!important}
+ #game .mobile-controls{order:3!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,48px);gap:5px;padding:3px 5px;margin:0;flex:0 0 auto;touch-action:none}
+ #game .mobile-controls button{display:block!important;margin:0!important;min-height:44px;padding:3px!important;border:3px solid #102744!important;box-shadow:inset 3px 3px rgba(255,255,255,.35),inset -3px -3px rgba(0,0,0,.17);background:#79d85b!important;color:#102744!important;font:900 clamp(13px,3.5vw,17px)/1.05 "Courier New"!important;touch-action:none;user-select:none;-webkit-user-select:none}
+ #game .mobile-controls .boost{background:#f3d64e!important}
+ #game .mobile-controls .fire{grid-column:1/-1;background:#ef6c88!important;font-size:19px!important}
+ #game .mobile-controls button:active{filter:brightness(1.15);transform:translateY(1px)}
+ #game .buttons{order:4!important}
+ #game .tip{order:5!important}
+}
 </style></head><body><main class="app"><div class="logo">WORD RACER</div><div style="position:fixed;top:4px;right:4px;z-index:10000"></div><section id="game" class="screen"><div class="hud"><div>SCORE <span id="score">0</span> · <span id="lives">❤❤❤</span></div><div id="target" class="target"></div><div id="progress" class="progress"></div></div>
 <div id="wrap" class="wrap"><canvas id="canvas"></canvas><div id="toast" class="toast"></div><div id="pauseOverlay" class="overlay"><div><div class="big" style="color:#f3d64e">PAUSED</div></div></div><div id="gameOver" class="overlay"><div><div class="big">GAME OVER</div><div class="msg">Nice try, your grandma would be proud</div><button id="again" class="primary">PLAY AGAIN</button><button id="overMenu" class="pink">MAIN MENU</button></div></div></div>
 <div class="buttons"><button id="pause" class="yellow">PAUSE</button><button id="restart">RESTART</button><button id="mainMenu" class="pink">MAIN MENU</button><button id="sound">🔊 SOUND ON</button></div>
