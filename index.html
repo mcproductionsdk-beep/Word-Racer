@@ -1,99 +1,52 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Word Racer — Boring Teacher</title>
-<script>if(new URLSearchParams(location.search).get("autoplay")==="1"&&location.hash.startsWith("#set="))document.documentElement.classList.add("bt-autoplay-pending");</script>
-<link rel="stylesheet" href="./styles/menu.css?release=student-arcade-autoplay-20261023v2">
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Racer — Boring Teacher Game Lab</title>
 <style>
-body{margin:0;background:#10192e;color:#f8f8ff;font-family:"Courier New",monospace}
+body{margin:0;background:#10192e;color:#f8f8ff;font:16px "Courier New",monospace}
 #racerFrame{display:none;width:100%;height:calc(100dvh - 12px);min-height:600px;border:0;background:#16264e}
 #racerFrame.playing{display:block}
-#app{max-width:1100px;margin:8px auto}#app[hidden]{display:none!important}
-.bt-autoplay-pending #app{visibility:hidden}
-</style></head>
-<body><main id="app"></main><iframe id="racerFrame" title="Word Racer gameplay" src="./racer-game.html?release=five-lane-desktop-v9"></iframe>
+#status{max-width:680px;margin:8vh auto;padding:28px;border:5px solid #f3d64e;background:#18375e;text-align:center}
+a{color:#f3d64e}button{background:#f3d64e;color:#152945;border:3px solid #152945;padding:12px 18px;font:900 16px "Courier New";cursor:pointer}
+</style>
+</head>
+<body>
+<main id="status" role="status" aria-live="polite">Loading shared vocabulary…</main>
+<iframe id="racerFrame" title="Word Racer gameplay" src="./racer-game.html"></iframe>
 <script type="module">
-import { mountTeacherMenu,mountStudentMenu } from "./core/menu.js?release=racer-dashboard-20261027";
-import { createSharingClient,readStudentSetId } from "./core/sharing.js?release=racer-multilingual-v2-20261023";
+import { createSharingClient,readStudentSetId } from "./core/sharing.js";
 import { createVoiceService } from "./core/voice.js";
-import { WAREHOUSE_CATEGORIES } from "./core/warehouse-categories.js";
-import { LANGUAGE_OPTIONS,categoriesForPair } from "./core/multilingual-vocabulary-v2.js";
-const root=document.getElementById("app"),frame=document.getElementById("racerFrame");
-// Mobile-only production routing. Desktop retains its original racer-game.html engine.
-const useMobileRacer=window.matchMedia("(pointer:coarse) and (max-width:760px) and (orientation:portrait)").matches;
-if(useMobileRacer){frame.src="./racer-mobile-preview.html?release=mobile-traffic-balance-v4";frame.style.height="100dvh";frame.style.minHeight="0";}
-
+const frame=document.getElementById("racerFrame");
+const status=document.getElementById("status");
+const voice=createVoiceService();
 const sharing=createSharingClient({apiBaseUrl:"https://boringteacher-vocabulary-api.mcproductionsdk.workers.dev"});
-const voice=createVoiceService();let menu=null;
-const instructions="ARROW KEYS / WASD = steer · P = pause. Eat the correct target-language word. Wrong words cost a life. The drive safely.";
-const options={title:"WORD RACER",instructions,categories:WAREHOUSE_CATEGORIES,defaultCategory:"Animals",defaultText:"",defaultPromptLanguage:"en-US",defaultLanguage:"es-ES",previewGameUrl:location.href,onPlay:start};
-const V1_LIBRARY_URL="https://boringteacher.com/libraries/vocabulary/v1.json";
-const V2_LIBRARY_URL="https://boringteacher.com/libraries/vocabulary/v2.json";
-async function loadBuiltInVocabulary(){
- const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),3500);
- try{
-  const response=await fetch(V1_LIBRARY_URL,{signal:controller.signal,cache:"no-store"});
-  if(!response.ok)throw Error("V1 HTTP "+response.status);
-  const library=await response.json();
-  if(library?.schemaVersion!==1||library?.pairOrder?.join(",")!=="target,en"||!library.languages)throw Error("Invalid V1 library");
-  for(const [locale,categories] of Object.entries(WAREHOUSE_CATEGORIES)){
-   const incoming=library.languages[locale];
-   if(!incoming)throw Error("Missing locale "+locale);
-   for(const key of Object.keys(categories)){
-    const pairs=incoming[key];
-    if(!Array.isArray(pairs)||pairs.length<5||!pairs.every(p=>Array.isArray(p)&&p.length===2&&p.every(x=>typeof x==="string"&&x.trim())))throw Error("Invalid V1 category "+locale+"/"+key);
-   }
-  }
-  options.categories=library.languages;
- }catch(e){console.warn("Word Racer V1 unavailable; using built-in categories.",e)}
- finally{clearTimeout(timeout)}
-}
-async function loadMultilingualVocabulary(){
- const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),4500);
- try{
-  const response=await fetch(V2_LIBRARY_URL,{signal:controller.signal,cache:"no-store"});
-  if(!response.ok)throw Error("V2 HTTP "+response.status);
-  const library=await response.json();
-  if(library.schemaVersion!==2||library.concepts?.length!==96)throw Error("Invalid V2 library");
-  for(const target of LANGUAGE_OPTIONS)for(const prompt of LANGUAGE_OPTIONS){
-   if(target.locale===prompt.locale)continue;
-   const cats=categoriesForPair(library,prompt.locale,target.locale);
-   if(Object.keys(cats).length!==8||Object.values(cats).some(pairs=>pairs.length!==12))throw Error("Incomplete V2 "+prompt.locale+" → "+target.locale);
-  }
-  options.multilingualLibrary=true;
-  options.languageOptions=LANGUAGE_OPTIONS;
-  options.getCategoriesForPair=(prompt,target)=>categoriesForPair(library,prompt,target);
-  console.info("Word Racer multilingual V2 loaded.");
- }catch(e){console.warn("Word Racer V2 unavailable; falling back to V1.",e)}
- finally{clearTimeout(timeout)}
-}
-let racerReady=false,pendingVocabulary=null;
-function deliverRacer(){
- if(!racerReady||!pendingVocabulary)return;
- frame.contentWindow.postMessage({type:"BT_RACER_START",pairs:pendingVocabulary.pairs,language:pendingVocabulary.language},location.origin);
- pendingVocabulary=null;
-}
-function start(vocabulary){
- document.documentElement.classList.remove("bt-autoplay-pending");
- pendingVocabulary=vocabulary;
- menu?.destroy();menu=null;root.hidden=true;root.style.setProperty('display','none','important');frame.classList.add("playing");
- deliverRacer();
- frame.contentWindow?.postMessage({type:"BT_RACER_PING"},location.origin);
- frame.focus();
-}
-function showMenu(forceTeacher=false){
- frame.classList.remove("playing");root.hidden=false;root.style.removeProperty('display');
- menu?.destroy();menu=null;voice.cancel();
- menu=!forceTeacher&&readStudentSetId(location.href)?mountStudentMenu(root,{sharing,voice},{...options,studentUrl:location.href,onRecover:()=>{history.replaceState(null,"",location.pathname+location.search);showMenu(true);}}):mountTeacherMenu(root,{sharing,voice},options);
-}
-window.addEventListener("message",e=>{
- if(e.origin!==location.origin||e.source!==frame.contentWindow)return;
- if(e.data?.type==="BT_RACER_READY"){racerReady=true;deliverRacer();}
- if(e.data?.type==="BT_RACER_SPEAK"&&typeof e.data.text==="string"&&e.data.text.length<=250&&["es-ES","de-DE","da-DK","en-US","fr-FR","it-IT"].includes(e.data.language)){void voice.speak(e.data.text,e.data.language);}
- if(e.data?.type==="BT_RACER_CANCEL_SPEECH")voice.cancel();
- if(e.data?.type==="BT_RACER_MENU"){if(new URLSearchParams(location.search).get("returnTo")==="dashboard"){location.assign("https://boringteacher.com/dev/word-games/");}else{history.replaceState(null,"",location.pathname+location.search);showMenu(true);}}
- if(e.data?.type==="BT_RACER_START_FAILED"){document.documentElement.classList.remove("bt-autoplay-pending");frame.classList.remove("playing");root.hidden=false;root.style.removeProperty('display');root.textContent="Word Racer could not start. Please refresh and try again.";}
+const dashboard="https://boringteacher.com/dev/word-games/";
+const isMobile=window.matchMedia("(pointer:coarse) and (max-width:760px) and (orientation:portrait)").matches;
+if(isMobile){frame.src="./racer-mobile-preview.html";frame.style.height="100dvh";frame.style.minHeight="0";}
+let ready=false,pending=null;
+function showError(message){status.hidden=false;frame.classList.remove("playing");status.replaceChildren();const p=document.createElement("p");p.textContent=message;const a=document.createElement("a");a.href=dashboard;a.textContent="RETURN TO WORD GAMES";status.append(p,a);}
+function deliver(){if(!ready||!pending)return;frame.contentWindow.postMessage({type:"BT_RACER_START",pairs:pending.pairs,language:pending.language},location.origin);pending=null;}
+window.addEventListener("message",event=>{
+ if(event.origin!==location.origin||event.source!==frame.contentWindow)return;
+ const data=event.data||{};
+ if(data.type==="BT_RACER_READY"){ready=true;deliver();}
+ if(data.type==="BT_RACER_SPEAK"&&typeof data.text==="string"&&data.text.length<=250&&["es-ES","de-DE","da-DK","en-US","fr-FR","it-IT"].includes(data.language))void voice.speak(data.text,data.language);
+ if(data.type==="BT_RACER_CANCEL_SPEECH")voice.cancel();
+ if(data.type==="BT_RACER_MENU")location.assign(dashboard);
+ if(data.type==="BT_RACER_START_FAILED")showError("Word Racer could not start this vocabulary set.");
 });
-frame.addEventListener("load",()=>{racerReady=false;frame.contentWindow?.postMessage({type:"BT_RACER_PING"},location.origin);});
-void loadBuiltInVocabulary().then(loadMultilingualVocabulary).finally(()=>showMenu());
-frame.contentWindow?.postMessage({type:"BT_RACER_PING"},location.origin);
-</script></body></html>
+frame.addEventListener("load",()=>{ready=false;frame.contentWindow?.postMessage({type:"BT_RACER_PING"},location.origin);});
+const id=readStudentSetId(location.href);
+if(!id){showError("Select vocabulary in the Boring Teacher universal menu, then launch Word Racer.");}
+else{
+ try{
+  const set=await sharing.loadSet(id);
+  if(!Array.isArray(set.pairs)||set.pairs.length<5)throw Error("At least five word pairs are required.");
+  pending={pairs:set.pairs,language:set.language};
+  status.hidden=true;frame.classList.add("playing");deliver();
+  frame.contentWindow?.postMessage({type:"BT_RACER_PING"},location.origin);
+ }catch(error){console.error("Word Racer set loading failed",error);showError("Unable to load this shared vocabulary set.");}
+}
+</script>
+</body></html>
