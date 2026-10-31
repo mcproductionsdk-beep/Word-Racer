@@ -19,3 +19,12 @@ test('desktop game validates vocabulary and retains input controls', () => {
 test('production files do not reference test-only site', () => {
  for (const p of ['index.html','racer-game.html']) assert.ok(!read(p).includes('bt-word-racer-game-lab.pages.dev'));
 });
+
+test('both engines map prompt and target in the same direction, including restart', () => {
+ for (const file of ['racer-game.html','racer-mobile-preview.html']) {
+  const source=read(file);
+  assert.ok(source.includes('target:p[1],prompt:p[0]'), file+' must map prompt first');
+  assert.ok(source.includes('return[p.prompt,p.target]'), file+' must preserve order on restart');
+  assert.ok(!source.includes('return[p.target,p.prompt]'), file+' must not reverse order');
+ }
+});
