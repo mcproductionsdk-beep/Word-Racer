@@ -21,7 +21,7 @@ const frame=document.getElementById("racerFrame");
 const status=document.getElementById("status");
 const voice=createVoiceService();
 const sharing=createSharingClient({apiBaseUrl:"https://boringteacher-vocabulary-api.mcproductionsdk.workers.dev"});
-const dashboard="https://boringteacher.com/dev/word-games/";
+const dashboard="./test-menu.html";
 const isMobile=window.matchMedia("(pointer:coarse) and (max-width:760px) and (orientation:portrait)").matches;
 if(isMobile){frame.src="./racer-mobile-preview.html";frame.style.height="100dvh";frame.style.minHeight="0";}
 let ready=false,pending=null;
@@ -38,7 +38,7 @@ window.addEventListener("message",event=>{
 });
 frame.addEventListener("load",()=>{ready=false;frame.contentWindow?.postMessage({type:"BT_RACER_PING"},location.origin);});
 const id=readStudentSetId(location.href);
-if(!id){showError("Select vocabulary in the Boring Teacher universal menu, then launch Word Racer.");}
+if(!id){showError("Select vocabulary in the temporary test menu, then launch Word Racer.");}
 else{
  try{
   const set=await sharing.loadSet(id);
